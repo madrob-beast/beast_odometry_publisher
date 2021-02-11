@@ -1,0 +1,18 @@
+<package format="2">
+  <name>beast_odometry_publisher</name>
+  <version>0.0.1</version>
+  <description>Odometry publisher for BEAST.</description>
+  <author email="enrico.piazza@polimi.it">Enrico Piazza</author>
+  <maintainer email="enrico.piazza@polimi.it">Enrico Piazza</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>nav_msgs</depend>
+  <depend>beast_msgs</depend>
+  <depend>tf</depend>
+  <depend>tf2_ros</depend>
+
+  <export>
+  </export>
+</package>

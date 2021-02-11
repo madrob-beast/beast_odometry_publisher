@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+    <node name="beast_odometry_node" pkg="beast_odometry_publisher" type="odometry_publisher" respawn="true" output="screen">
+        <rosparam file="$(find beast_odometry_publisher)/config/beast_odometry_parameters.yaml" />
+    </node>
+
+    <node pkg="tf" type="static_transform_publisher" name="laser_static_frame_broadcaster" args="-0.05 0 0  3.141592 0 0 base_link laser 10" />
+
+</launch>
