@@ -2,9 +2,8 @@ base_frame_id: base_link
 odom_frame_id: odom
 publish_rate: 50
 
-wheel_separation: 0.4275  # TODO measure
-wheel_radius: 0.085  # TODO measure
-#wheel_radius: 0.085  # TODO measure
+wheel_separation: 0.4275  # wheel width: 0.05
+wheel_radius: 0.082
 
 wheel_separation_multiplier: 1.0
 left_wheel_radius_multiplier: 1.0
