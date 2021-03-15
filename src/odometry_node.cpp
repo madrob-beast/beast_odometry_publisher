@@ -9,11 +9,13 @@
 #include <beast_odometry_publisher/odometry.h>
 #include <sstream>
 
+bool left_wheel_locked = false;
 bool left_status_received = false;
 auto left_angle = 0.0;
 ros::Time left_last_status_time;
 void leftWheelStatusCallback(const beast_msgs::Wheel::ConstPtr& left_wheel_status_msg) {
 //    ROS_INFO("left angle: %0.4f", left_wheel_status_msg->angle);
+    left_wheel_locked = left_wheel_status_msg->braking_force > 0;
     if(left_status_received){
         left_angle += left_wheel_status_msg->velocity * (left_wheel_status_msg->header.stamp - left_last_status_time).toSec();
     } else {
@@ -22,11 +24,13 @@ void leftWheelStatusCallback(const beast_msgs::Wheel::ConstPtr& left_wheel_statu
     left_last_status_time = left_wheel_status_msg->header.stamp;
 }
 
+bool right_wheel_locked = false;
 bool right_status_received = false;
 auto right_angle = 0.0;
 ros::Time right_last_status_time;
 void rightWheelStatusCallback(const beast_msgs::Wheel::ConstPtr& right_wheel_status_msg) {
 //    ROS_INFO("right angle: %0.4f", right_wheel_status_msg->angle);
+    right_wheel_locked = right_wheel_status_msg->braking_force > 0;
     if(right_status_received){
         right_angle += right_wheel_status_msg->velocity * (right_wheel_status_msg->header.stamp - right_last_status_time).toSec();
     } else {
@@ -134,33 +138,35 @@ int main(int argc, char **argv) {
 
         // Estimate linear and angular velocity using joint information
 //        ROS_INFO("previous odometry %0.4f %0.4f %0.4f", odometry_.getX(), odometry_.getY(), odometry_.getHeading());
-        odometry_.update(left_angle, right_angle, time);
-//        ROS_INFO("updated  odometry %0.4f %0.4f %0.4f", odometry_.getX(), odometry_.getY(), odometry_.getHeading());
+        if(!left_wheel_locked && !right_wheel_locked){
+            odometry_.update(left_angle, right_angle, time);
+    //        ROS_INFO("updated  odometry %0.4f %0.4f %0.4f", odometry_.getX(), odometry_.getY(), odometry_.getHeading());
+    
+            // Compute and store orientation info
+            const geometry_msgs::Quaternion orientation(tf::createQuaternionMsgFromYaw(odometry_.getHeading()));
 
-        // Compute and store orientation info
-        const geometry_msgs::Quaternion orientation(tf::createQuaternionMsgFromYaw(odometry_.getHeading()));
+            // Populate odom message and publish
+            nav_msgs::Odometry odom_msg;
+            odom_msg.header.stamp = time;
+            odom_msg.header.frame_id = odom_frame_id_;
+            odom_msg.child_frame_id = base_frame_id_;
+            odom_msg.pose.pose.position.x = odometry_.getX();
+            odom_msg.pose.pose.position.y = odometry_.getY();
+            odom_msg.pose.pose.orientation = orientation;
+            odom_msg.twist.twist.linear.x  = odometry_.getLinear();
+            odom_msg.twist.twist.angular.z = odometry_.getAngular();
+            odom_pub_.publish(odom_msg);
 
-        // Populate odom message and publish
-        nav_msgs::Odometry odom_msg;
-        odom_msg.header.stamp = time;
-        odom_msg.header.frame_id = odom_frame_id_;
-        odom_msg.child_frame_id = base_frame_id_;
-        odom_msg.pose.pose.position.x = odometry_.getX();
-        odom_msg.pose.pose.position.y = odometry_.getY();
-        odom_msg.pose.pose.orientation = orientation;
-        odom_msg.twist.twist.linear.x  = odometry_.getLinear();
-        odom_msg.twist.twist.angular.z = odometry_.getAngular();
-        odom_pub_.publish(odom_msg);
-
-        // Publish tf from odom to robot base frame
-        geometry_msgs::TransformStamped odom_frame;
-        odom_frame.header.stamp = time;
-        odom_frame.header.frame_id = odom_frame_id_;
-        odom_frame.child_frame_id = base_frame_id_;
-        odom_frame.transform.translation.x = odometry_.getX();
-        odom_frame.transform.translation.y = odometry_.getY();
-        odom_frame.transform.rotation = orientation;
-        br.sendTransform(odom_frame);
+            // Publish tf from odom to robot base frame
+            geometry_msgs::TransformStamped odom_frame;
+            odom_frame.header.stamp = time;
+            odom_frame.header.frame_id = odom_frame_id_;
+            odom_frame.child_frame_id = base_frame_id_;
+            odom_frame.transform.translation.x = odometry_.getX();
+            odom_frame.transform.translation.y = odometry_.getY();
+            odom_frame.transform.rotation = orientation;
+            br.sendTransform(odom_frame);
+        }
 
         ros::spinOnce();
         loop_rate.sleep();
