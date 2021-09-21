@@ -42,6 +42,7 @@ void rightWheelStatusCallback(const beast_msgs::Wheel::ConstPtr& right_wheel_sta
 int main(int argc, char **argv) {
     ros::init(argc, argv, "odometry_publisher");
     ros::NodeHandle n("~");
+    ros::NodeHandle nh;
     beast_odometry_publisher::Odometry odometry_;
 
     const std::string complete_ns = n.getNamespace();
@@ -120,8 +121,8 @@ int main(int argc, char **argv) {
     ros::Rate loop_rate(publish_rate_);
     odometry_.init(ros::Time::now());
 
-    ros::Subscriber left_sub = n.subscribe("/beast_cart/left/wheel_status", 10, leftWheelStatusCallback);
-    ros::Subscriber right_sub = n.subscribe("/beast_cart/right/wheel_status", 10, rightWheelStatusCallback);
+    ros::Subscriber left_sub = nh.subscribe("left/wheel_status", 10, leftWheelStatusCallback);
+    ros::Subscriber right_sub = nh.subscribe("right/wheel_status", 10, rightWheelStatusCallback);
     ros::Time previous_time = ros::Time::now();
 
     while (ros::ok()) {
